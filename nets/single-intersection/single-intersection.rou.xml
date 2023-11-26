@@ -1,0 +1,20 @@
+<routes>
+    <route id="route_ns" edges="n_t t_s"/>
+    <route id="route_we" edges="w_t t_e"/>
+
+    <flow id="flow_we" route="route_we" begin="0" end="2000" departSpeed="max" number="10"/>
+
+    <flow id="flow_ns" route="route_ns" begin="0" end="10000" probability="0.1" departSpeed="max" departPos="base" departLane="best"/>
+
+    <vType id="car" vClass="passenger"/>
+    <vehicle id="vehicle1" type="car" route="route_ns" depart="1000"/>
+    <vehicle id="vehicle2" type="car" route="route_ns" depart="1005"/>
+    <vehicle id="vehicle3" type="car" route="route_ns" depart="1010"/>
+    <vehicle id="vehicle4" type="car" route="route_ns" depart="1500"/>
+    <vehicle id="vehicle5" type="car" route="route_ns" depart="1505"/>
+    <vehicle id="vehicle6" type="car" route="route_ns" depart="1510"/>
+    <vehicle id="vehicle7" type="car" route="route_ns" depart="1515"/>
+    <vehicle id="vehicle8" type="car" route="route_ns" depart="1520"/>
+    <vehicle id="vehicle9" type="car" route="route_ns" depart="2000"/>
+    <vehicle id="vehicle10" type="car" route="route_ns" depart="2005"/>
+</routes>
