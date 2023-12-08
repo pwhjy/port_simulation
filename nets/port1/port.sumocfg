@@ -1,7 +1,7 @@
 <configuration>
     <input>
-        <net-file value="single-intersection.net.xml"/>
-        <route-files value="single-intersection.rou.xml"/>
+        <net-file value="port.net.xml"/>
+        <route-files value="port.rou.xml"/>
     </input>
     <time>
         <begin value="0"/>
