@@ -1,0 +1,20 @@
+<routes>
+    <route id="route_ns" edges="n_t t_s"/>
+    <route id="route_we" edges="w_t t_e"/>
+
+    <flow id="flow_we" route="route_we" begin="0" end="200" departSpeed="max" number="100"/>
+
+<!--    <flow id="flow_ns" route="route_ns" begin="0" end="100" probability="0.1" departSpeed="max" departPos="base" departLane="best"/>-->
+
+    <vType id="Truck" vClass="passenger"/>
+    <vehicle id="vehicle1" type="Truck" route="route_ns" depart="100"/>
+    <vehicle id="vehicle2" type="Truck" route="route_ns" depart="105"/>
+    <vehicle id="vehicle3" type="Truck" route="route_ns" depart="110"/>
+    <vehicle id="vehicle4" type="Truck" route="route_ns" depart="150"/>
+    <vehicle id="vehicle5" type="Truck" route="route_ns" depart="155"/>
+    <vehicle id="vehicle6" type="Truck" route="route_ns" depart="160"/>
+    <vehicle id="vehicle7" type="Truck" route="route_ns" depart="165"/>
+    <vehicle id="vehicle8" type="Truck" route="route_ns" depart="170"/>
+    <vehicle id="vehicle9" type="Truck" route="route_ns" depart="200"/>
+    <vehicle id="vehicle10" type="Truck" route="route_ns" depart="205"/>
+</routes>

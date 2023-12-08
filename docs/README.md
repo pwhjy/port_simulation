@@ -20,6 +20,18 @@ Notice that you will not be able to run with sumo-gui or with multiple simulatio
 
 
 
+
+
+### Experiments
+
+Check experiments for examples on how to instantiate an environment.
+
+```bash
+python experiments/simulator.py -config config/port.ini
+```
+
+![port1](D:\Always\Git_coder\port_simulation\port_simulation\docs\port1.png)
+
 ## MDP - Observations, Actions and Rewards
 
 ### Observation
@@ -28,7 +40,7 @@ Notice that you will not be able to run with sumo-gui or with multiple simulatio
 
 The default observation for each traffic signal agent is a vector:
 ```python
-    obs = []
+obs = []
 ```
 You can define your own observation by implementing a class that inherits from ObservationFunction and passing it to the environment constructor.
 
@@ -54,10 +66,7 @@ env = SumoEnvironment(..., reward_fn=my_reward_fn)
 
 <!-- end reward -->
 
-### Experiments
 
-Check experiments for examples on how to instantiate an environment.
 
-```bash
-python experiments/simulator.py
-```
+
+

@@ -5,6 +5,7 @@ import time
 import sys
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Union
+import configparser
 
 if "SUMO_HOME" in os.environ:
     tools = os.path.join(os.environ["SUMO_HOME"], "tools")
@@ -24,51 +25,23 @@ from .vehicle import *
 LIBSUMO = "LIBSUMO_AS_TRACI" in os.environ
 
 
-# class SumoEnvironment():
-class SumoEnvironment(gym.Env):
-    """
-    Args:
-        net_file (str): SUMO .net.xml file
-        route_file (str): SUMO .rou.xml file
-        out_csv_name (Optional[str]): name of the .csv output with simulation results. If None, no output is generated
-        use_gui (bool): Whether to run SUMO simulation with the SUMO GUI
-        virtual_display (Optional[Tuple[int,int]]): Resolution of the virtual display for rendering
-        begin_time (int): The time step (in seconds) the simulation starts. Default: 0
-        num_seconds (int): Number of simulated seconds on SUMO. The duration in seconds of the simulation. Default: 20000
-        max_depart_delay (int): Vehicles are discarded if they could not be inserted after max_depart_delay seconds. Default: -1 (no delay)
-        waiting_time_memory (int): Number of seconds to remember the waiting time of a vehicle (see https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getAccumulatedWaitingTime). Default: 1000
-        time_to_teleport (int): Time in seconds to teleport a vehicle to the end of the edge if it is stuck. Default: -1 (no teleport)
-        delta_time (int): Simulation seconds between actions. Default: 5 seconds
-        yellow_time (int): Duration of the yellow phase. Default: 2 seconds
-        min_green (int): Minimum green time in a phase. Default: 5 seconds
-        max_green (int): Max green time in a phase. Default: 60 seconds. Warning: This parameter is currently ignored!
-        single_agent (bool): If true, it behaves like a regular gym.Env. Else, it behaves like a MultiagentEnv (returns dict of observations, rewards, dones, infos).
-        reward_fn (str/function/dict): String with the name of the reward function used by the agents, a reward function, or dictionary with reward functions assigned to individual traffic lights by their keys.
-        observation_class (ObservationFunction): Inherited class which has both the observation function and observation space.
-        add_system_info (bool): If true, it computes system metrics (total queue, total waiting time, average speed) in the info dictionary.
-        add_per_agent_info (bool): If true, it computes per-agent (per-traffic signal) metrics (average accumulated waiting time, average queue) in the info dictionary.
-        sumo_seed (int/string): Random seed for sumo. If 'random' it uses a randomly chosen seed.
-        fixed_ts (bool): If true, it will follow the phase configuration in the route_file and ignore the actions given in the :meth:`step` method.
-        sumo_warnings (bool): If true, it will print SUMO warnings.
-        additional_sumo_cmd (str): Additional SUMO command line arguments.
-        render_mode (str): Mode of rendering. Can be 'human' or 'rgb_array'. Default: None
-    """
+class myconf(configparser.ConfigParser):
+    def __init__(self,defaults=None):
+        configparser.ConfigParser.__init__(self,defaults=defaults)
+    def optionxform(self, optionstr):
+        return optionstr
 
-    metadata = {
-        "render_modes": ["human", "rgb_array"],
-    }
+
+class SumoEnvironment(gym.Env):
+    metadata = { "render_modes": ["human", "rgb_array"], }
 
     CONNECTION_LABEL = 0  # For traci multi-client support
 
     def __init__(
         self,
-        net_file: str,
-        route_file: str,
+        config_path: str,
         out_csv_name: Optional[str] = None,
-        use_gui: bool = False,
         virtual_display: Tuple[int, int] = (3200, 1800),
-        begin_time: int = 0,
-        num_seconds: int = 20000,
         max_depart_delay: int = -1,
         waiting_time_memory: int = 1000,
         time_to_teleport: int = -1,
@@ -89,13 +62,17 @@ class SumoEnvironment(gym.Env):
     ) -> None:
         """Initialize the environment."""
         assert render_mode is None or render_mode in self.metadata["render_modes"], "Invalid render mode."
+        self.config_path = config_path
+        self.cf = myconf()
+        self.cf.read(self.config_path, "utf-8")
+
         self.render_mode = render_mode
         self.virtual_display = virtual_display
         self.disp = None
-
-        self._net = net_file
-        self._route = route_file
-        self.use_gui = use_gui
+        self._net = self.cf.get("SUMO", "nets")
+        self._route = self.cf.get("SUMO", "route")
+        self.trucks = dict()
+        self.use_gui = self.cf.getboolean("RENDER", "gui")
         if self.use_gui or self.render_mode is not None:
             self._sumo_binary = sumolib.checkBinary("sumo-gui")
         else:
@@ -103,8 +80,8 @@ class SumoEnvironment(gym.Env):
 
         assert delta_time > yellow_time, "Time between actions must be at least greater than yellow time."
 
-        self.begin_time = begin_time
-        self.sim_max_time = begin_time + num_seconds
+        self.begin_time = self.cf.getint("SUMO", "begin_time")
+        self.sim_max_time = self.begin_time + self.cf.getint("SUMO", "num_seconds")
         self.delta_time = delta_time  # seconds on sumo at each step
         self.max_depart_delay = max_depart_delay  # Max wait time to insert a vehicle
         self.waiting_time_memory = waiting_time_memory  # Number of seconds to remember the waiting time of a vehicle (see https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getAccumulatedWaitingTime)
@@ -273,11 +250,10 @@ class SumoEnvironment(gym.Env):
             return self._compute_observations()
 
     def _add_truck(self, truck_id, route: Union[str, list]):
-        truck = Truck(truck_id, self.sumo)
-        truck._route_vehicle(route)
-        # truck._get_info()
+        truck = Truck(self.sumo, truck_id, route)
+        info = truck._get_info()
         self.trucks[truck_id] = truck
-        print(f"add new truck in env done")
+        print(f"add new truck {info} in env done")
 
     def get_current_vehicles(self):
         vehicle_ids = self.sumo.vehicle.getIDList()
@@ -308,6 +284,8 @@ class SumoEnvironment(gym.Env):
         """
         # No action, follow fixed TL defined in self.phases
 
+        print(f"Env step with action {action}")
+
         if action is None or action == {}:
             for _ in range(self.delta_time):
                 self._sumo_step()
@@ -337,18 +315,11 @@ class SumoEnvironment(gym.Env):
                     time_to_act = True
 
     def _apply_actions(self, actions):
-        """Set the next green phase for the traffic signals.
-        Args:
-            actions: If single-agent, actions is an int between 0 and self.num_green_phases (next green phase)
-                     If multiagent, actions is a dict {ts_id : greenPhase}
         """
-        if self.single_agent:
-            if self.traffic_signals[self.ts_ids[0]].time_to_act:
-                self.traffic_signals[self.ts_ids[0]].set_next_phase(actions)
-        else:
-            for ts, action in actions.items():
-                if self.traffic_signals[ts].time_to_act:
-                    self.traffic_signals[ts].set_next_phase(action)
+        todo：执行具体操作
+        """
+        pass
+
 
     def _compute_dones(self):
         dones = {ts_id: False for ts_id in self.ts_ids}

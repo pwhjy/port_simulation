@@ -24,8 +24,8 @@ if __name__ == "__main__":
         "-route",
         dest="route",
         type=str,
-        default="nets/single-intersection/single-intersection.rou.xml",
-        # default="nets/double/flow.rou.xml",
+        # default="nets/single-intersection/single-intersection.rou.xml",
+        default="nets/double/flow.rou.xml",
         # default="nets/4x4-Lucas/4x4c1c2c1c2.rou.xml",
         help="Route definition xml file.\n",
     )
@@ -51,8 +51,8 @@ if __name__ == "__main__":
 
     env = SumoEnvironment(
         # net_file="nets/4x4-Lucas/4x4.net.xml",
-        # net_file="nets/double/network.net.xml",
-        net_file="nets/single-intersection/single-intersection.net.xml",
+        net_file="nets/double/network.net.xml",
+        # net_file="nets/single-intersection/single-intersection.net.xml",
         route_file=args.route,
         out_csv_name=out_csv,
         use_gui=args.gui,
