@@ -1,7 +1,7 @@
 <h1 align="center">🚢 Port Simulation 🚛 </h1>
 
 <h3 align="center">
-    <p>"A simulation platform for studying the allocation of container storage positions in ports."</p>
+    <p>"A platform used for researching the coordination of autonomous vehicles to optimize the efficiency of transport and other collaborative tasks."</p>
 </h3>
 <p align="center">
     <a href="https://github.com/OpenBMB/AgentVerse/blob/main/LICENSE">
