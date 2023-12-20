@@ -48,6 +48,21 @@ python experiments/simulator.py -config config/port.ini
 <p align="center">
 <img src="./docs/port1.png" width="425">
 </p>
+| **[SUMO]**          |                               |             |
+| ------------------- | ----------------------------- | ----------- |
+| nets                | 路网定义文件路径              | ： .net.xml |
+| route               | 路由定义文件路径              | ： .rou.xml |
+| num_seconds         | 仿真时间步step                | ：int       |
+|                     |                               |             |
+| delta_time          | Env执行action的step间隔时间步 | default = 1 |
+| edges_start_default | 车辆默认初始位置（边）        |             |
+| begin_time          | sumo仿真起始时间步            | default = 0 |
+|                     |                               |             |
+|                     |                               |             |
+| **[RENDER]**        |                               |             |
+| gui                 | 是否可视化sumo                | ：bool      |
+
+
 
 ## MDP - Observations, Actions and Rewards
 
