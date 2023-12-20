@@ -30,17 +30,21 @@ if __name__ == "__main__":
 
     initial_states = env.reset()
     done = {"__all__": False}
-    truck_id = 0
+    step = 0
+    start_time = time.time()
     while not done["__all__"]:
-        time.sleep(0.1)
-        env._add_truck(str(truck_id)+"ns", "route_ns")
-        time.sleep(0.05)
-        env._add_truck(str(truck_id)+"we", "route_we")
-        truck_id += 1
+        # time.sleep(0.1)
+        if step < 50:
+            env._add_truck(str(step), task = None)
+        step += 1
         s, r, done, _ = env.step({})
-        env.get_current_vehicles()
+        if step % 5 ==0:
+            env.get_current_vehicles()
 
     env.close()
+    end_time = time.time()
+    print(end_time - start_time)
+
 
 
 

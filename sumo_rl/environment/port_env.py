@@ -21,6 +21,7 @@ import traci
 from .observations import DefaultObservationFunction, ObservationFunction
 from .traffic_signal import TrafficSignal
 from .vehicle import *
+from .schedule import *
 
 LIBSUMO = "LIBSUMO_AS_TRACI" in os.environ
 
@@ -46,7 +47,7 @@ class SumoEnvironment(gym.Env):
         waiting_time_memory: int = 1000,
         time_to_teleport: int = -1,
         delta_time: int = 5,
-        yellow_time: int = 2,
+        yellow_time: int = 0,
         min_green: int = 5,
         max_green: int = 50,
         single_agent: bool = False,
@@ -82,7 +83,7 @@ class SumoEnvironment(gym.Env):
 
         self.begin_time = self.cf.getint("SUMO", "begin_time")
         self.sim_max_time = self.begin_time + self.cf.getint("SUMO", "num_seconds")
-        self.delta_time = delta_time  # seconds on sumo at each step
+        self.delta_time = self.cf.getint("SUMO", "delta_time")  # seconds on sumo at each step
         self.max_depart_delay = max_depart_delay  # Max wait time to insert a vehicle
         self.waiting_time_memory = waiting_time_memory  # Number of seconds to remember the waiting time of a vehicle (see https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getAccumulatedWaitingTime)
         self.time_to_teleport = time_to_teleport
@@ -193,6 +194,7 @@ class SumoEnvironment(gym.Env):
         else:
             traci.start(sumo_cmd, label=self.label)
             self.sumo = traci.getConnection(self.label)
+        self.Scheduler = Scheduler(self.sumo)
 
         if self.use_gui or self.render_mode is not None:
             self.sumo.gui.setSchema(traci.gui.DEFAULT_VIEW, "real world")
@@ -249,26 +251,22 @@ class SumoEnvironment(gym.Env):
         else:
             return self._compute_observations()
 
-    def _add_truck(self, truck_id, route: Union[str, list]):
-        truck = Truck(self.sumo, truck_id, route)
-        info = truck._get_info()
+    def _add_truck(self, truck_id, task: Union[str, list, None]):
+        truck = Truck(self.sumo, self.Scheduler, truck_id, task)
+        # info = truck._get_info()
         self.trucks[truck_id] = truck
-        print(f"add new truck {info} in env done")
+        logging.info(f"add new truck {truck_id} in sumoenv and apply task")
 
     def get_current_vehicles(self):
         vehicle_ids = self.sumo.vehicle.getIDList()
-        print(f"sumo.sim Time = { self.sumo.simulation.getTime()}, "
-              f"vehicle_ids = {vehicle_ids}")
-        # 打印车辆ID
-        if len(vehicle_ids) > 0:
-            for vehicle_id in vehicle_ids:
-                info = {
-                    "vehicle_id": vehicle_id,
-                    "route": self.sumo.vehicle.getRoute(vehicle_id),
-                    "curroute": self.sumo.vehicle.getRouteID(vehicle_id),
-                    "position": self.sumo.vehicle.getPosition(vehicle_id)
-                }
-                print(info)
+        print(f"Time = { self.sumo.simulation.getTime()},"
+              f" cur_vehicle_num = {len(vehicle_ids)}"
+              f" all_vehicle_num = {len(self.trucks)}"
+              # f" cur_vehicle_ids = {vehicle_ids}"
+              )
+        for id in vehicle_ids:
+            info = self.trucks[id]._get_info()
+            # print(info)
         return vehicle_ids
 
     @property
@@ -276,43 +274,8 @@ class SumoEnvironment(gym.Env):
         """Return current simulation second on SUMO."""
         return self.sumo.simulation.getTime()
 
-    def step(self, action = Union[dict, int]):
-        """Apply the action(s) and then step the simulation for delta_time seconds.
-        Args:
-            action (Union[dict, int]): action(s) to be applied to the environment.
-            If single_agent is True, action is an int, otherwise it expects a dict with keys corresponding to traffic signal ids.
-        """
-        # No action, follow fixed TL defined in self.phases
-
-        print(f"Env step with action {action}")
-
-        if action is None or action == {}:
-            for _ in range(self.delta_time):
-                self._sumo_step()
-        else:
-            self._apply_actions(action)
-            self._run_steps()
-
-        observations = self._compute_observations()
-        rewards = self._compute_rewards()
-        dones = self._compute_dones()
-        terminated = False  # there are no 'terminal' states in this environment
-        truncated = dones["__all__"]  # episode ends when sim_step >= max_steps
-        info = self._compute_info()
-
-        if self.single_agent:
-            return observations[self.ts_ids[0]], rewards[self.ts_ids[0]], terminated, truncated, info
-        else:
-            return observations, rewards, dones, info
-
-    def _run_steps(self):
-        time_to_act = False
-        while not time_to_act:
-            self._sumo_step()
-            for ts in self.ts_ids:
-                self.traffic_signals[ts].update()
-                if self.traffic_signals[ts].time_to_act:
-                    time_to_act = True
+    def _sumo_step(self):
+        self.sumo.simulationStep()
 
     def _apply_actions(self, actions):
         """
@@ -320,6 +283,30 @@ class SumoEnvironment(gym.Env):
         """
         pass
 
+    def step(self, action = Union[dict, int]):
+        """Apply the action(s) and then step the simulation for delta_time seconds.
+            action (Union[dict, int]): action(s) to be applied to the environment.
+        """
+        logging.info(f"------------------------ Time = { self.sumo.simulation.getTime()}, sumoEnv step with action {action} ------------------------")
+
+        self._apply_actions(action)
+        for _ in range(self.delta_time):
+            for id in self.sumo.vehicle.getIDList():
+                #
+                self.trucks[id]._check_task_start()
+                task_finished = self.trucks[id]._check_task_finish()
+                if task_finished:
+                    self.trucks[id]._apply_task(task=None)
+            #
+            self._sumo_step()
+
+        observations = self._compute_observations()
+        rewards = self._compute_rewards()
+        dones = self._compute_dones()
+        terminated = False  # there are no 'terminal' states in this environment
+        truncated = dones["__all__"]  # episode ends when sim_step >= max_steps
+        info = self._compute_info()
+        return observations, rewards, dones, info
 
     def _compute_dones(self):
         dones = {ts_id: False for ts_id in self.ts_ids}
@@ -370,9 +357,6 @@ class SumoEnvironment(gym.Env):
     def action_spaces(self, ts_id: str) -> gym.spaces.Discrete:
         """Return the action space of a traffic signal."""
         return self.traffic_signals[ts_id].action_space
-
-    def _sumo_step(self):
-        self.sumo.simulationStep()
 
 
     def _get_system_info(self):

@@ -1,11 +1,10 @@
 <routes>
-    <route id="route_default" edges="E3"/>
-<!--    <route id="route_ns" edges="E2D2 D2D3 D3D4 D4E4 E4E3 -E6 E6 E3E2 E2D2"/>-->
-<!--    <route id="route_we" edges="E5 E3 D3D2 D2D1 D1D0 D0C0 C1C2 E5"/>-->
+    <route id="route_ns" edges="E2D2 D2D3 D3D4 D4E4 E4E3 -E6 E6 E3E2 E2D2"/>
+    <route id="route_we" edges="E3 D3D2 D2D1 D1D0 D0C0 C1C2 E5 E3"/>
 
-<!--    <flow id="flow_we" route="route_we" begin="0" end="20000" departSpeed="max" number="1000"/>-->
+    <flow id="flow_we" route="route_we" begin="0" end="20000" departSpeed="max" number="1000"/>
 
-<!--    <flow id="flow_ns" route="route_ns" begin="0" end="10000" probability="0.5" departSpeed="max" departPos="base" departLane="best"/>-->
+    <flow id="flow_ns" route="route_ns" begin="0" end="10000" probability="0.5" departSpeed="max" departPos="base" departLane="best"/>
 
 <!--    <vType id="Truck" vClass="passenger"/>-->
 <!--    <vehicle id="vehicle1" type="Truck" route="route_ns" depart="100"/>-->
