@@ -67,7 +67,7 @@ class Vehicle():
             logging.info(f"""set {self.vehicle_id} from edge {start_edge} to edge {end_edge} along {Route}""")
             return end_edge
         except Exception as ex:
-            logging.warning(f"Fail to set {self.vehicle_id} to {start_edge, end_edge}: {ex}")
+            logging.warning(f"Fail to route {self.vehicle_id} to {start_edge, end_edge}: {ex}")
             return None
 
     def _pause_vehicle(self):
@@ -82,7 +82,7 @@ class Vehicle():
     def _check_task_start(self, threshold = 10) -> bool:
         """
         判断是否到达路由终点
-        todo: 如果设置的[delta_time较大/速度较快]会捕捉不到到达终点附近
+        todo: 如果设置的[delta_time较大/速度较快/threshold小]会捕捉不到到达终点附近
         :param threshold:
         :return:
         """
@@ -120,15 +120,15 @@ class Vehicle():
         #       f"start_task = {self.start_task}")
         return self.finish_task
 
-    def _apply_task(self, task: Union[str, list, None]):
+    def _apply_task(self, task: Union[str, list, None], invalid_task = None):
         """
         执行一次运输任务
         :param des:
         :return:
         """
+        Task = task if task else self.Scheduler.dispatch_task(self.vehicle_id, invalid_task)
         try:
-            task = task if task else self.Scheduler.dispatch_task(self.vehicle_id)
-            route = task  # todo: 从task中解析route（起）始点
+            route = Task  # todo: 从task中解析route（起）始点
             end_edge = self._route_vehicle(route)
             if end_edge:
                 self.sumo.vehicle.setSpeed(self.vehicle_id, self.speed)
@@ -136,19 +136,21 @@ class Vehicle():
                              self.sumo.lane.getEdgeID(lane_id) == end_edge]
                 lane = self.sumo.lane.getShape(end_lanes[0])
                 self.destination = {"id": 0,
-                                    "task": task,
+                                    "task": Task,
                                     "edge": end_edge,
                                     "position": ((lane[0][0] + lane[-1][0]) / 2, (lane[0][1] + lane[-1][1]) / 2)
                                     # todo: 暂且把lane中点设置为路由终点
                                     }
-                self.Scheduler.tasks_ongoing.append(task)
+                self.Scheduler.tasks_ongoing.append(Task)
                 self.finish_task = False
             else:
-                logging.warning(f"Fail to route {self.vehicle_id} for task {task}")
+                logging.warning(f"Fail to dispatch {self.vehicle_id} to task {Task}, try to apply task again")
+                self.Scheduler.tasks_pending.append(Task)
+                self._apply_task(task = None, invalid_task = Task)
         except Exception as ex:
             logging.warning(f"Fail to apply_task {task} to {self.vehicle_id}: {ex}")
-            self.Scheduler.tasks_pending.append(task)
-            return None
+            self.Scheduler.tasks_pending.append(Task)
+
 
 
 

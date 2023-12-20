@@ -34,13 +34,12 @@ if __name__ == "__main__":
     start_time = time.time()
     while not done["__all__"]:
         # time.sleep(0.1)
-        if step < 50:
+        if step < 200: # todo: 车道上没有足够的空间来容纳新车（堵车），SUMO会等待直到有足够的空间可供其进入车道
             env._add_truck(str(step), task = None)
         step += 1
         s, r, done, _ = env.step({})
         if step % 5 ==0:
             env.get_current_vehicles()
-
     env.close()
     end_time = time.time()
     print(end_time - start_time)

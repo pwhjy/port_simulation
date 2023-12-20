@@ -259,9 +259,9 @@ class SumoEnvironment(gym.Env):
 
     def get_current_vehicles(self):
         vehicle_ids = self.sumo.vehicle.getIDList()
-        print(f"Time = { self.sumo.simulation.getTime()},"
+        print(f"------------------------ Time = { self.sumo.simulation.getTime()},"
               f" cur_vehicle_num = {len(vehicle_ids)}"
-              f" all_vehicle_num = {len(self.trucks)}"
+              # f" all_vehicle_num = {len(self.trucks)}"
               # f" cur_vehicle_ids = {vehicle_ids}"
               )
         for id in vehicle_ids:
@@ -288,8 +288,8 @@ class SumoEnvironment(gym.Env):
             action (Union[dict, int]): action(s) to be applied to the environment.
         """
         logging.info(f"------------------------ Time = { self.sumo.simulation.getTime()}, sumoEnv step with action {action} ------------------------")
-
         self._apply_actions(action)
+
         for _ in range(self.delta_time):
             for id in self.sumo.vehicle.getIDList():
                 #
