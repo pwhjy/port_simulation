@@ -76,6 +76,8 @@ obs = []
 ```
 You can define your own observation by implementing a class that inherits from ObservationFunction and passing it to the environment constructor.
 
+![image-20231221202534826](C:\Users\wyf\AppData\Roaming\Typora\typora-user-images\image-20231221202534826.png)
+
 <!-- end observation -->
 
 ### Action

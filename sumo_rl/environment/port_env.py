@@ -194,7 +194,7 @@ class SumoEnvironment(gym.Env):
         else:
             traci.start(sumo_cmd, label=self.label)
             self.sumo = traci.getConnection(self.label)
-        self.Scheduler = Scheduler(self.sumo)
+        self.Scheduler = Scheduler(self)
 
         if self.use_gui or self.render_mode is not None:
             self.sumo.gui.setSchema(traci.gui.DEFAULT_VIEW, "real world")
@@ -252,7 +252,7 @@ class SumoEnvironment(gym.Env):
             return self._compute_observations()
 
     def _add_truck(self, truck_id, task: Union[str, list, None]):
-        truck = Truck(self.sumo, self.Scheduler, truck_id, task)
+        truck = Truck(self, truck_id, task)
         # info = truck._get_info()
         self.trucks[truck_id] = truck
         logging.info(f"add new truck {truck_id} in sumoenv and apply task")
@@ -297,6 +297,8 @@ class SumoEnvironment(gym.Env):
                 task_finished = self.trucks[id]._check_task_finish()
                 if task_finished:
                     self.trucks[id]._apply_task(task=None)
+                self.trucks[id].\
+                    _get_observation_()
             #
             self._sumo_step()
 
