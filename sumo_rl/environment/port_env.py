@@ -22,6 +22,7 @@ from .observations import DefaultObservationFunction, ObservationFunction
 from .traffic_signal import TrafficSignal
 from .vehicle import *
 from .schedule import *
+from .intersection_controller import *
 
 LIBSUMO = "LIBSUMO_AS_TRACI" in os.environ
 
@@ -152,6 +153,8 @@ class SumoEnvironment(gym.Env):
         self.out_csv_name = out_csv_name
         self.observations = {ts: None for ts in self.ts_ids}
         self.rewards = {ts: None for ts in self.ts_ids}
+        self.intersection_controller = None
+
 
     def _start_simulation(self):
         sumo_cmd = [
@@ -198,6 +201,8 @@ class SumoEnvironment(gym.Env):
 
         if self.use_gui or self.render_mode is not None:
             self.sumo.gui.setSchema(traci.gui.DEFAULT_VIEW, "real world")
+        self.intersection_controller = IntersectionController(self.sumo)
+
 
     def reset(self, seed: Optional[int] = None, **kwargs):
         """Reset the environment."""
@@ -300,7 +305,10 @@ class SumoEnvironment(gym.Env):
                 self.trucks[id].\
                     _get_observation_()
             #
-            self._sumo_step()
+        self.intersection_controller.step()
+        self._sumo_step()
+
+        self._sumo_step()
 
         observations = self._compute_observations()
         rewards = self._compute_rewards()
