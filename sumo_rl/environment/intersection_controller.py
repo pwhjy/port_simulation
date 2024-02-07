@@ -61,7 +61,7 @@ class IntersectionController:
         if edgeID not in route:
             return None, None
         assert edgeID in route
-        # assert route[-1] != edgeID
+
         if route[-1] == edgeID:
             nextEdgeID = None
         else:
@@ -79,7 +79,7 @@ class IntersectionController:
         print("self.priorityIdxpairDict:", self.priorityIdxpairDict)
         print("self.occupyingIdxpairDict:", self.occupyingIdxpairDict)
 
-        ids = self.getVehicleIDInCircle(300, 300, 30)
+        ids = self.getVehicleIDInCircle(300, 300, 50)
         for i in ids:
             edgeID = self.sumo.vehicle.getRoadID(i)
             if edgeID not in self.edgeIDList:
@@ -92,27 +92,29 @@ class IntersectionController:
                     continue
                 edgeIdx, nextEdgeIdx = self.getEdgeIdxPair(i)
                 self.priorityIdxpairDict[i] = (edgeIdx, nextEdgeIdx)
-                self.sumo.vehicle.setSpeed(i, 0)
-            # else:
-            #     if i not in self.occupyingIdxpairDict.keys():
-            #         continue
-            #     self.occupyingIdxpairDict.pop(i)
-            #     self.sumo.vehicle.setSpeedMode(i, 31)
+                laneID = self.sumo.vehicle.getLaneID(i)
+                laneLength = self.sumo.lane.getLength(laneID)
+                self.sumo.vehicle.setStop(i, edgeID, pos=laneLength - 1)
+
         remove_occ = []
         for i in self.occupyingIdxpairDict.keys():
-            if i not in self.sumo.vehicle.getIDList() or i not in self.priorityIdxpairDict.keys():
+            assert i in ids
+            if i not in self.sumo.vehicle.getIDList():
                 remove_occ.append(i)
+            else:
+                edgeID = self.sumo.vehicle.getRoadID(i)
+                if edgeID not in self.edgeIDList:
+                    continue
+                if edgeID == self.edgeIDList[self.occupyingIdxpairDict[i][1]]:
+                    remove_occ.append(i)
+
+
         for i in remove_occ:
             self.occupyingIdxpairDict.pop(i)
 
         candidates = []
         for i in self.priorityIdxpairDict.keys():
             assert i not in self.occupyingIdxpairDict.keys()
-            # edgeID = self.sumo.vehicle.getRoadID(i)
-            # if edgeID not in self.edgeIDList:
-            #     print("edgeID:", edgeID)
-            #     pass
-            # assert edgeID in self.edgeIDList
 
             edgeIdx, nextEdgeIdx = self.priorityIdxpairDict[i]
             assert edgeIdx % 2 == 0
@@ -141,7 +143,8 @@ class IntersectionController:
             edgeIdx, nextEdgeIdx = self.getEdgeIdxPair(i)
             if nextEdgeIdx is not None:
                 self.occupyingIdxpairDict[i] = (edgeIdx, nextEdgeIdx)
-            # self.sumo.vehicle.setSpeedMode(i, 55)
-            self.sumo.vehicle.setSpeed(i, -1)
+            edgeID = self.edgeIDList[edgeIdx]
+            laneLength = self.sumo.lane.getLength(self.sumo.vehicle.getLaneID(i))
+            self.sumo.vehicle.setStop(i, edgeID, pos=laneLength - 1, duration=0)
 
         return
