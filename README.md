@@ -31,6 +31,7 @@ source ~/.bashrc
 Important: for a huge performance boost (~8x) with Libsumo, you can declare the variable:
 ```bash
 export LIBSUMO_AS_TRACI=1
+export SUMO_HOME="/opt/homebrew/opt/sumo/share/sumo"
 ```
 Notice that you will not be able to run with sumo-gui or with multiple simulations in parallel if this is active ([more details](https://sumo.dlr.de/docs/Libsumo.html)).
 
@@ -43,7 +44,7 @@ Notice that you will not be able to run with sumo-gui or with multiple simulatio
 Check experiments for examples on how to instantiate an environment.
 
 ```bash
-python experiments/simulator.py -config config/port.ini
+python3 experiments/simulator.py -config config/port.ini
 ```
 <p align="center">
 <img src="./docs/port1.png" width="425">
