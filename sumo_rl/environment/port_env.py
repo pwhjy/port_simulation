@@ -305,7 +305,7 @@ class SumoEnvironment(gym.Env):
                 self.trucks[id].\
                     _get_observation_()
             #
-        self.intersection_controller.step()
+        # self.intersection_controller.step()
         self._sumo_step()
 
         self._sumo_step()
